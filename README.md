@@ -14,6 +14,8 @@ This project is made to practice some concepts that are new and/or underused. We
     * Every blog post should be summarized and send to BSky/Mastodon/Other Services as Identified
 5. Keypass authentication
     * We want to use Keypass, it is the future.
+6. AI Integration
+    * We want to be able to generate a summary of the post, either using important phrases from the document or by  having the AI write a summary, that will fit under the bsky/mastodon character counts.
 
 ## Timeline
 
