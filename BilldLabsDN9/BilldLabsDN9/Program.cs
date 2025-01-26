@@ -1,4 +1,7 @@
 using BilldLabsDN9.Components;
+using BilldLabsDN9.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +9,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+//load DefaultConnection ConnectString from user secrets
+//TODO: switch based on env and use a keystore for production.
+builder.Configuration.AddUserSecrets<Program>();
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if(connectionString == null)
+{
+    throw new Exception("Connection string 'DefaultConnection' not found.");
+}
+//enable entity framework with a mysql connection.
+builder.Services.AddDbContext<BLDBContext>(options=>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 var app = builder.Build();
 
@@ -21,6 +37,17 @@ else
     app.UseHsts();
 }
 
+
+//build database and run migrations
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    var context = services.GetRequiredService<BLDBContext>();
+
+    context.Database.Migrate();
+
+}
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
