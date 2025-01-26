@@ -17,6 +17,11 @@ This project is made to practice some concepts that are new and/or underused. We
 6. AI Integration
     * We want to be able to generate a summary of the post, either using important phrases from the document or by  having the AI write a summary, that will fit under the bsky/mastodon character counts.
 
+## UML
+
+This is a living document, and should not be considered final. https://lucid.app/lucidchart/1859e79c-dd80-401b-8925-02a61b3e962c/edit?viewport_loc=-1374%2C-1700%2C2994%2C1401%2CHWEp-vi-RSFO&invitationId=inv_83828499-2f12-401c-8286-6718a38dce27
+
 ## Timeline
 
 The above 5 goals are intended to be completed by 2/2/25.
+
