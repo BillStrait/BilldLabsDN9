@@ -1,7 +1,14 @@
 using BilldLabsDN9.Components;
 using BilldLabsDN9.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using System.Text;
+using Blazored.LocalStorage;
+using BilldLabsDN9.Services;
+using Microsoft.AspNetCore.Components.Authorization;
+using BilldLabsDN9.Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +16,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddHttpClient("BilldLabsDN9.ServerAPI", client => client.BaseAddress = new Uri(builder.Configuration["ServerAPI"]?? "http://localhost:5271"));
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService< CustomAuthenticationStateProvider>());
 
 //load DefaultConnection ConnectString from user secrets
 //TODO: switch based on env and use a keystore for production.
@@ -22,6 +34,29 @@ if(connectionString == null)
 //enable entity framework with a mysql connection.
 builder.Services.AddDbContext<BLDBContext>(options=>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = false)
+    .AddEntityFrameworkStores<BLDBContext>()
+    .AddDefaultTokenProviders();
+
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+    };
+});
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -57,5 +92,6 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(BilldLabsDN9.Client._Imports).Assembly);
+app.MapControllers();
 
 app.Run();

@@ -1,0 +1,99 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+
+@using Blazored.LocalStorage
+@using BilldLabsDN9.Data.Auth
+
+@inject HttpClient Http
+@inject CustomAuthenticationStateProvider AuthenticationStateProvider
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager Navigation
+
+<h3>Login</h3>
+
+@if (!string.IsNullOrEmpty(LoginMessage))
+{
+    <p class="attention">@LoginMessage</p>
+}
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Email:</label>
+        <InputText @bind-Value="loginModel.Email" />
+    </div>
+    <div>
+        <label>Password:</label>
+        <InputText @bind-Value="loginModel.Password" type="password" />
+    </div>
+    <button type="submit">Login</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(RegistrationMessage))
+{
+    <p class="attention">@RegistrationMessage</p>
+}
+<EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div>
+        <label>Email:</label>
+        <InputText @bind-Value="registerModel.Email" />
+    </div>
+    <div>
+        <label>Password:</label>
+        <InputText @bind-Value="registerModel.Password" type="password" />
+    </div>
+    <div>
+        <label>Confirm Password:</label>
+        <InputText @bind-Value="registerModel.ConfirmPassword" type="password" />
+    </div>
+</EditForm>
+
+@code {
+    public string LoginMessage { get; set; } = string.Empty;
+    public string RegistrationMessage { get; set; } = string.Empty;
+    private LoginModel loginModel = new LoginModel();
+    private RegisterModel registerModel = new RegisterModel();
+
+    private async Task HandleLogin()
+    {
+        var response = await Http.PostAsJsonAsync("api/auth/login", loginModel);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+            await LocalStorage.SetItemAsync("authToken", result?.Token);
+            AuthenticationStateProvider.MarkUserAsAuthenticated(result?.Token);
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            LoginMessage = "Invalid login attempt.";
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        if (registerModel.Password != registerModel.ConfirmPassword)
+        {
+            RegistrationMessage = "Passwords do not match.";
+            return;
+        }
+
+        var response = await Http.PostAsJsonAsync("api/auth/register", registerModel);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+            await LocalStorage.SetItemAsync("authToken", result?.Token);
+            AuthenticationStateProvider.MarkUserAsAuthenticated(result?.Token ?? throw new Exception("Registration failed in an unusual way."));
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            LoginMessage = "Invalid registration attempt.";
+        }
+    }
+}
